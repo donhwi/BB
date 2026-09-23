@@ -1,0 +1,724 @@
+/* 이돈휘 포트폴리오 — 시안에 없던 것만 여기에 둔다.
+   시안이 만든 규칙은 design.css 에 그대로 있고, 이 파일은 그 위에 얹는다.
+   재생성: python tools/build_site.py */
+
+/* ── 서체 ───────────────────────────────────────────────
+   Galmuri11 (SIL OFL 1.1, quiple/galmuri) — 도트 톤의 뼈대다.
+   웹폰트가 늦게 와도 글이 사라지지 않게 swap 을 쓴다. */
+@import url('https://cdn.jsdelivr.net/gh/quiple/galmuri/dist/galmuri.css');
+
+/* ── 건너뛰기 링크 (키보드) ───────────────────────────── */
+.skip {
+  position: absolute; left: -9999px; top: 0; z-index: 999;
+  padding: 12px 18px; background: #d4623f; color: #0e0d0b;
+  font-family: 'Galmuri11', monospace; font-size: 13px;
+}
+.skip:focus { left: 0; }
+
+/* ── 영상 ──────────────────────────────────────────────
+   전부 무음·자동 반복이다. 화면에 들어올 때만 재생한다 (main.js). */
+video[data-src], video[src] {
+  display: block; width: 100%; height: 100%;
+  object-fit: cover;
+  background: #06070a;
+  image-rendering: pixelated;   /* 도트 필터를 살린다 — 보간하면 뭉갠다 */
+}
+.v-box { position: relative; overflow: hidden; background: #06070a; max-width: 100%; align-self: start; }
+/* 4:3 상자는 높이를 칸에 맞춰 늘리면 가로가 칸을 넘는다. 가로를 기준으로 잡고 높이를 비율로 정한다. */
+.v-badge {
+  position: absolute; right: 8px; bottom: 8px; z-index: 2;
+  padding: 3px 7px; background: rgba(6,7,10,.72);
+  border: 1px solid #26313a;
+  font-family: 'Galmuri11', monospace; font-size: 12px; color: #8b8375;
+  pointer-events: none;
+}
+
+/* ── 좌측 인덱스: 지금 보고 있는 곳 ──────────────────── */
+aside[data-side-index] a[aria-current="true"] { color: #f4eee1 !important; }
+aside[data-side-index] a[aria-current="true"] [data-navbar] {
+  width: 26px !important; background: #d4623f !important;
+}
+
+/* ── BT 뷰어: 끌어서 옮기고 휠로 확대 ────────────────── */
+#bt-viewer { cursor: grab; touch-action: none; overscroll-behavior: contain; }
+#bt-viewer.is-drag { cursor: grabbing; }
+#bt-viewer > div:first-child { transform-origin: 0 0; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { #bt-viewer > div:first-child { transition: none !important; } }
+
+/* ── 기믹 카드: 노드에 올리면 그 줄만 밝아진다 ───────── */
+/* 시안이 코드 줄마다 `opacity: 1; background: transparent` 를 **인라인**으로 박아 뒀다.
+   인라인은 스타일시트를 이기므로 !important 가 없으면 이 규칙이 조용히 무시된다
+   (2026-08-31 — JS 는 멀쩡히 돌아 .is-lit 까지 붙는데 화면만 안 변했다). */
+[data-gimcard] [data-line] { transition: opacity 90ms steps(3, end), background 90ms steps(3, end); }
+[data-gimcard].is-peek [data-line] { opacity: .28 !important; }
+[data-gimcard].is-peek [data-line].is-lit { opacity: 1 !important; background: #10161c !important; }
+[data-btnode] { cursor: pointer !important; }
+[data-btnode]:focus-visible { outline: 2px dashed #d4623f; outline-offset: 2px; }
+
+/* ── 클릭해서 불러오는 iframe (남의 서버라 눌러야 부른다) ── */
+.embed { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #0b0a08; }
+.embed-note {
+  padding: 10px 2px 0;
+  font-family: 'Galmuri11', monospace; font-size: 12px; color: #8b8375; line-height: 1.8;
+}
+
+/* ── 게임 덮개 ────────────────────────────────────────
+   세로 9:16 게임을 본문 칸에 넣으면 손톱만 하다. 크게 띄운다.
+   닫으면 iframe 이 사라지므로 소리도 그때 멎는다 —
+   다른 출처의 iframe 안은 손이 닿지 않아 「끄기」는 만들 수 없다. */
+.modal {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(6, 7, 10, .94);
+}
+.modal-box {
+  display: flex; flex-direction: column;
+  border: 2px solid #2a251c; background: #0b0a08;
+  max-width: 96vw; max-height: 96vh;
+}
+.modal-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 12px; border-bottom: 2px solid #2a251c;
+  font-family: 'Galmuri11', monospace; font-size: 12px; color: #8b8375;
+}
+.modal-title { color: #f4eee1; }
+.modal-note { margin-left: auto; }
+a.modal-x { text-decoration: none; }
+.modal-x {
+  transition: all 90ms steps(3, end);
+  padding: 7px 12px; border: 2px solid #3a3328; background: #15130f;
+  color: #d6cdbc; font-family: 'Galmuri11', monospace; font-size: 12px; cursor: pointer;
+}
+.modal-x:hover { border-color: #d4623f; color: #f4eee1; background: #1f1c16; }
+.modal-x:active { transform: translate(0, 2px); }
+.modal-frame { position: relative; background: #0b0a08; }
+@media (max-width: 599px) {
+  .modal { padding: 0; }
+  .modal-box { max-width: 100vw; max-height: 100vh; border-width: 0 0 2px; }
+  .modal-note { display: none; }
+}
+
+/* ── 이미지 기본 ──────────────────────────────────────── */
+img { max-width: 100%; }
+.fit-contain { object-fit: contain !important; background: #0b0a08; }
+
+/* ── 좁은 화면 ────────────────────────────────────────
+   시안이 리드 문단에 max-width:620px 를 걸어 두었는데 375px 에서
+   그 값이 그대로 남아 오른쪽이 잘렸다 (실측 — 오른쪽 끝 640px). */
+@media (max-width: 767px) {
+  section p, section h2, section h3 { max-width: 100% !important; }
+  [data-loop-wrap] { min-width: 0 !important; }
+  .embed-note { font-size: 12px; }
+}
+
+/* ── 01-7 카드: 속줄을 카드끼리 맞춘다 ────────────────
+   바깥 높이는 격자가 맞춰 주는데 안의 「문제 / 원인 / 고친 것」 세 줄이 제각각이었다
+   (실측 1280px: [100,74,101] · [73,74,101] · [73,74,74]).
+   줄마다 px 로 최소 높이를 박으면 폭이 바뀔 때 또 어긋난다. subgrid 로 줄 자체를 공유한다.
+   카드 = 번호·제목·구분선 3줄 + 본문 3줄 = 6줄. */
+@supports (grid-template-rows: subgrid) {
+  @media (min-width: 941px) {
+    [data-log="grid"] { grid-template-rows: repeat(6, auto); align-items: stretch; }
+    [data-log="card"] {
+      grid-row: span 6;
+      display: grid !important;
+      grid-template-rows: subgrid;
+      row-gap: 18px;
+    }
+    [data-log="body"] {
+      grid-row: span 3;
+      display: grid !important;
+      grid-template-rows: subgrid;
+      row-gap: 0;
+    }
+  }
+}
+
+/* ── 좁은 화면의 「한눈에」 ───────────────────────────
+   히어로 안으로 들어온 지표 띠가 375px 에서 한 줄씩 쌓여 히어로가 1268px 이 됐다
+   (첫 화면 812 을 456 넘긴다). 두 칸으로 접고 여백을 줄인다.
+   마지막 칸(보스 1체)은 혼자 남으므로 한 줄을 다 쓴다. */
+@media (max-width: 767px) {
+  #s0 [data-stack="summary"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  #s0 [data-stack="summary"] > div { padding: 12px 13px !important; gap: 5px !important; }
+  #s0 [data-stack="summary"] > div:last-child { grid-column: 1 / -1; }
+}
+
+/* ── 태블릿 폭의 전투 루프 ────────────────────────────
+   시안은 768px 아래에서만 카드를 세로로 쌓는다. 그 위(768~940)에서는
+   카드 묶음이 990px 이라 가로로 밀린다 — 스크롤은 되지만 「전환」 화살표가
+   화면 밖이라 페이즈 2·3 이 있는 줄을 모른다. 쌓는 구간을 940 까지 올린다. */
+@media (min-width: 768px) and (max-width: 940px) {
+  [data-loop-wrap] { min-width: 0 !important; }
+  [data-loop-row] { flex-direction: column !important; }
+  [data-loop-arrow] { flex: none !important; width: 100%; padding: 10px 0 !important; }
+  [data-loop-arrow] > span:last-child { width: 60% !important; }
+  [data-loop-cap] { flex: none !important; flex-direction: row !important; gap: 10px !important; padding: 8px 0 !important; }
+  [data-loop-cap] > span:last-child {
+    flex: 1 !important; width: auto !important; height: 2px !important;
+    background: repeating-linear-gradient(90deg, #2a3843 0 6px, transparent 6px 12px) !important;
+  }
+}
+
+/* ── 인쇄 (PDF 로 뽑아 보는 사람이 있다) ──────────────── */
+@media print {
+  aside[data-side-index], .skip { display: none !important; }
+  section { break-inside: avoid; }
+  video { display: none !important; }
+}
+
+
+/* ── 세계관 페이지로 가는 낱말 ─────────────────────────
+   점선 밑줄로 「눌러 볼 수 있다」만 알린다. 본문 색은 건드리지 않는다.
+   새 탭으로 열리므로 읽던 자리를 잃지 않는다. (tools/build_site.py: wire_lore_links) */
+a.loreterm {
+  color: inherit;
+  text-decoration: underline dotted #d4623f;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+}
+a.loreterm:hover,
+a.loreterm:focus-visible {
+  color: #e88a68;
+  text-decoration: underline solid #e88a68;
+}
+/* 화살표 아이콘은 뺐다 — 패턴 이름이 「A · B · C」로 나열되는 자리가 있어
+   낱말마다 붙이면 한 줄에 셋이 겹친다. 점선 밑줄만으로 충분하다. */
+
+/* ── 포폴 ↔ 세계관 레일 칸 (tools/crosslink.py 와 짝). 구간 링크와 모양이
+   달라야 해서 네모 칸이다. 레일이 넘쳐 스크롤될 때(세계관 목차는 65장) 맨 위에
+   붙어 있게 sticky — 레일이 안 넘치는 쪽(포폴)에서는 아무 일도 안 한다. */
+aside[data-side-index] a[data-crosslink] {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border: 2px solid #2a251c;
+  background: #0d1116;
+  color: #c9a34a;
+  text-decoration: none;
+}
+aside[data-side-index] a[data-crosslink] [data-crossarrow] {
+  color: #8b8375;
+  transition: 90ms steps(3);
+}
+/* design.css 의 `aside a:hover{color:#f4eee1 !important}` 가 글자색을 가져가므로
+   여기서는 테두리·바탕만 든다 (#1f1c16 은 이 사이트의 hover 바탕) */
+aside[data-side-index] a[data-crosslink]:hover,
+aside[data-side-index] a[data-crosslink]:focus-visible {
+  border-color: #d4623f;
+  background: #1f1c16;
+}
+aside[data-side-index] a[data-crosslink]:hover [data-crossarrow],
+aside[data-side-index] a[data-crosslink]:focus-visible [data-crossarrow] {
+  color: #d4623f;
+}
+
+
+/* ── 좁은 폭 보정 (복원판) ─────────────────────────────
+   고정 목차(약 136px)와 본문 컬럼이 1400px 아래에서 겹쳐서,
+   폭에 따라 본문 여백을 확보하고 아주 좁으면 목차를 접는다. */
+@media (max-width: 1400px) {
+  aside[data-side-index] {
+    left: 12px !important;
+    background: rgba(14, 13, 11, .82);
+    padding: 10px 10px 10px 8px;
+  }
+  aside[data-side-index] ~ section > div,
+  aside[data-side-index] ~ section > div[style*="max-width"] {
+    padding-left: 176px !important;
+  }
+  footer > div { padding-left: 176px !important; }
+}
+@media (max-width: 860px) {
+  aside[data-side-index] { display: none !important; }
+  aside[data-side-index] ~ section > div,
+  aside[data-side-index] ~ section > div[style*="max-width"] {
+    padding-left: 24px !important;
+  }
+  footer > div { padding-left: 24px !important; }
+}
+
+
+/* ── 01-6 플레이어 기술 (추가 구간) ───────────────────── */
+@media (max-width: 1100px) {
+  [data-stack="skillgrid"], [data-stack="lanes"], [data-stack="sheets"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 1100px) {
+  [data-stack="lore40"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 767px) {
+  [data-stack="skillgrid"], [data-stack="lanes"], [data-stack="sheets"],
+  [data-stack="intent40"], [data-stack="lore40"] { grid-template-columns: minmax(0, 1fr) !important; }
+  #s1-skills [data-breakout="1"] { margin-left: 0 !important; }
+}
+
+/* 이펙트 격자 — 칸 높이를 행 단위로 맞춘다 */
+#s1-skills [data-stack="sheets"] > [data-lift] { height: 100%; }
+#s1-skills [data-stack="sheets"] > [data-lift] > div:last-child { flex: 1 1 auto; }
+
+@media (max-width: 767px) { #s1-skills [data-breakout="1"] { margin-left: 0 !important; max-width: 100% !important; } }
+
+@media (min-width: 768px) and (max-width: 1100px) { #s1-skills [data-stack="sheets"] { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } }
+@media (max-width: 767px) { #s1-skills [data-stack="sheets"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+
+/* 01-6 추가 덩어리 */
+@media (max-width: 900px) { [data-stack="prep40"] { grid-template-columns: minmax(0, 1fr) !important; } }
+@media (max-width: 900px) {
+  [data-stack="attr40"] { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: none !important; }
+  [data-stack="attr40"] > div { grid-row: auto !important; grid-template-rows: none !important; }
+}
+@media (max-width: 700px) { [data-stack="hex40"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+@media (max-width: 767px) {
+  [data-stack="prep40"], [data-stack="hex40"], [data-stack="attr40"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+/* 4열 한 줄에서 축 이름이 안 잘리게 */
+[data-stack="hex40"] svg text { font-size: 10px; }
+
+/* 패턴 23종 수치표 — 전체보기 (native details + :has, JS 없음) */
+#s1-bt [data-pt-box] { max-height: 340px; }
+#s1-bt div:has(> [data-pt-details][open]) [data-pt-box] { max-height: none; }
+#s1-bt div:has(> [data-pt-details][open]) [data-pt-fade] { display: none; }
+#s1-bt [data-pt-toggle]::-webkit-details-marker { display: none; }
+#s1-bt [data-pt-less] { display: none; }
+#s1-bt [data-pt-details][open] [data-pt-less] { display: inline; }
+#s1-bt [data-pt-details][open] [data-pt-more] { display: none; }
+#s1-bt [data-pt-toggle]:hover { border-color: rgb(212, 98, 63); color: rgb(244, 238, 225); }
+
+@media (max-width: 900px) {
+  [data-stack="intent2"], [data-stack="wux"], [data-stack="mult"], [data-stack="heat3"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="stars3"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+@media (max-width: 1100px) { [data-lore-side="1"] { margin-top: 0 !important; } }
+@media (max-width: 1100px) { [data-stack="mult"], [data-stack="wux"] { grid-template-columns: minmax(0, 1fr) !important; } }
+
+@media (max-width: 900px) {
+  [data-stack="intent2"] { grid-template-columns: minmax(0, 1fr) !important; gap: 32px !important; }
+  [data-intent-rule="1"] { display: none !important; }
+}
+
+@media (max-width: 900px) {
+  [data-stack="defgraph"], [data-stack="defeq"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-defeq-rule="1"] { display: none !important; }
+}
+
+@media (max-width: 760px) { [data-stack="defcards"] { grid-template-columns: minmax(0, 1fr) !important; } }
+
+@media (max-width: 1100px) { [data-stack="defrow"] { grid-template-columns: minmax(0, 1fr) !important; } }
+
+@media (max-width: 900px) {
+  [data-stack="defstep"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="defeq2"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+[data-pt-table] th:nth-child(1), [data-pt-table] td:nth-child(1) {
+  position: sticky; left: 0; z-index: 2; background: #12110e; width: 88px; min-width: 88px;
+}
+[data-pt-table] th:nth-child(2), [data-pt-table] td:nth-child(2) {
+  position: sticky; left: 88px; z-index: 1; background: #12110e; min-width: 190px;
+}
+
+@media (max-width: 900px) { [data-stack="limit3"] { grid-template-columns: minmax(0, 1fr) !important; } }
+
+@media (max-width: 900px) { [data-stack="tree2"] { grid-template-columns: minmax(0, 1fr) !important; } }
+
+
+/* ── 00-1 장르 계보 타임라인 ─────────────────────────── */
+[data-tlnode] { cursor: default; }
+[data-tlnode]:hover [data-tlicon] { border-color: #d4623f; color: #f4eee1; }
+[data-tlnode]:hover [data-tlchip] { border-color: #d4623f; color: #f4eee1; background: #1f1c16; }
+[data-tl]:has([data-tlnode][data-key="n1"]:hover) [data-tlchip][data-key="n1"],
+[data-tl]:has([data-tlnode][data-key="n1"]:focus-visible) [data-tlchip][data-key="n1"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n2"]:hover) [data-tlchip][data-key="n2"],
+[data-tl]:has([data-tlnode][data-key="n2"]:focus-visible) [data-tlchip][data-key="n2"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n3"]:hover) [data-tlchip][data-key="n3"],
+[data-tl]:has([data-tlnode][data-key="n3"]:focus-visible) [data-tlchip][data-key="n3"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n4"]:hover) [data-tlchip][data-key="n4"],
+[data-tl]:has([data-tlnode][data-key="n4"]:focus-visible) [data-tlchip][data-key="n4"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n5"]:hover) [data-tlchip][data-key="n5"],
+[data-tl]:has([data-tlnode][data-key="n5"]:focus-visible) [data-tlchip][data-key="n5"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n6"]:hover) [data-tlchip][data-key="n6"],
+[data-tl]:has([data-tlnode][data-key="n6"]:focus-visible) [data-tlchip][data-key="n6"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n7"]:hover) [data-tlchip][data-key="n7"],
+[data-tl]:has([data-tlnode][data-key="n7"]:focus-visible) [data-tlchip][data-key="n7"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n8"]:hover) [data-tlchip][data-key="n8"],
+[data-tl]:has([data-tlnode][data-key="n8"]:focus-visible) [data-tlchip][data-key="n8"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n9"]:hover) [data-tlchip][data-key="n9"],
+[data-tl]:has([data-tlnode][data-key="n9"]:focus-visible) [data-tlchip][data-key="n9"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n10"]:hover) [data-tlchip][data-key="n10"],
+[data-tl]:has([data-tlnode][data-key="n10"]:focus-visible) [data-tlchip][data-key="n10"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n11"]:hover) [data-tlchip][data-key="n11"],
+[data-tl]:has([data-tlnode][data-key="n11"]:focus-visible) [data-tlchip][data-key="n11"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+[data-tl]:has([data-tlnode][data-key="n12"]:hover) [data-tlchip][data-key="n12"],
+[data-tl]:has([data-tlnode][data-key="n12"]:focus-visible) [data-tlchip][data-key="n12"] { border-color: #d4623f !important; background: #1f1c16 !important; color: #f4eee1 !important; }
+
+[data-tl-scroll] { scrollbar-width: thin; scrollbar-color: #2a3843 transparent; }
+
+@media (max-width: 900px) {
+  [data-stack="fun4"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  [data-stack="care2"] { grid-template-columns: minmax(0, 1fr) !important; gap: 32px !important; }
+}
+@media (max-width: 767px) {
+  [data-stack="fun4"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="beh"] { grid-template-columns: minmax(0, 1fr) !important; gap: 6px !important; }
+  [data-stack="beh"] > span:nth-child(2) { text-align: left !important; }
+
+  /* 세로 타임라인 */
+  [data-stack="tl13"] { grid-template-columns: minmax(0, 1fr) !important; gap: 24px !important; }
+  [data-tlgrid] { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: none !important; min-height: 0 !important; row-gap: 10px !important; padding-left: 18px; border-left: 2px solid #2a3843; }
+  [data-tlrail], [data-tl-gap] { display: none !important; }
+  [data-tlnode] { grid-column: 1 !important; grid-row: auto !important; }
+  [data-tlend] > div:first-child { width: 108px !important; height: 108px !important; }
+}
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  [data-stack="tl13"] { grid-template-columns: 200px minmax(0, 1fr) !important; gap: 20px !important; }
+  [data-tlgrid] { min-height: 620px !important; }
+}
+
+/* 계보 ㄹ자: 좁아지면 도깨비를 위로 올리고 진입선을 감춘다 */
+@media (max-width: 1250px) {
+  [data-stack="tl13"] { grid-template-columns: minmax(0, 1fr) !important; gap: 26px !important; }
+  [data-tlend] { align-self: auto !important; flex-direction: row !important; align-items: center !important; gap: 24px !important; padding-bottom: 0 !important; }
+  [data-tlend] > div[style*="order: -1"] { order: 0 !important; }
+  [data-tlentry] { display: none !important; }
+}
+
+/* 계보: 로고 핀을 선 위에 두므로 좁은 화면에서는 안쪽으로 되돌린다 */
+@media (max-width: 1250px) {
+  [data-tlend] > div:first-child { flex: 0 0 auto; }
+}
+@media (max-width: 900px) {
+  [data-tlnode] { padding-left: 52px !important; }
+  [data-tlpin] { left: 0 !important; }
+}
+
+@media (max-width: 900px) {
+  [data-tlgrid] { padding: 0 0 0 18px !important; }
+}
+
+@media (max-width: 1250px) {
+  [data-tlend] { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 24px !important; grid-template-rows: none !important; }
+  [data-tlbox] { order: -1; }
+  [data-tlend] > div[style*="grid-row: 1"] { padding-bottom: 0 !important; align-self: center !important; }
+}
+
+/* 좁은 폭에서는 도깨비 박스가 격자 위로 올라가므로 1열 레일의 주황 꼬리를 지운다 */
+@media (max-width: 1250px) {
+  [data-tlv0] { background: #2a3843 !important; }
+  [data-tlend] > [data-tlchips] { padding-bottom: 0 !important; align-self: center !important; }
+}
+
+@media (max-width: 767px) { [data-stack="contra3"] { grid-template-columns: minmax(0, 1fr) !important; } }
+
+/* ── 00-2 기존 MMORPG와의 차이 ─────────────────────── */
+
+
+/* 채팅 줄이 화면에 들어올 때 한 번 올라온다 */
+@keyframes chatin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+[data-chatline] { animation: chatin 320ms steps(6, end) both; animation-timeline: view(); animation-range: entry 0% entry 45%; }
+@media (prefers-reduced-motion: reduce) { [data-chatline] { animation: none; } }
+
+@media (max-width: 1100px) {
+  [data-stack="tc2"] { grid-template-columns: minmax(0, 1fr) !important; gap: 28px !important; }
+}
+@media (max-width: 900px) {
+  [data-stack="fun22"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 767px) {
+  [data-stack="diffboard"], [data-stack="pk3"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="numband"] { flex-direction: column !important; gap: 14px; }
+  [data-stack="numband"] > span[style*="width: 1px"] { display: none !important; }
+  [data-stack="numband"] > span { padding: 0 !important; }
+}
+
+/* ── 00-2 / 00-3 보강 도식 ─────────────────────────── */
+@media (max-width: 1100px) {
+  [data-stack="tech2"], [data-stack="fun01"], [data-stack="fun34"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="strong6"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 900px) {
+  [data-stack="task3"], [data-stack="deck2"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 767px) {
+  [data-stack="strong6"], [data-stack="diffboard"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="trade3"] { flex-direction: column !important; align-items: stretch !important; }
+  [data-stack="trade3"] > span { transform: rotate(90deg); align-self: center !important; }
+}
+
+@media (max-width: 1100px) { [data-stack="ask5"] { grid-template-columns: minmax(0, 1fr) !important; } }
+
+/* 거래 띠: 좁은 폭에서는 화살표를 숨기고 2단으로 */
+@media (max-width: 1000px) {
+  [data-stack="trade3"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="trade3"] > span { display: block !important; justify-self: center; transform: rotate(90deg); }
+}
+
+/* 변경점 띠: 3열 유지, 좁아지면 1열로 (칸 배치도 되돌린다) */
+@media (max-width: 767px) {
+  [data-stack="diffboard"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── 00-2 PK 스위치 ─────────────────────────────────── */
+[data-pkstate] [data-pk="on"] { display: none; }
+[data-pkbox]:has(#pk-on:checked) [data-pkstate] [data-pk="off"] { display: none; }
+[data-pkbox]:has(#pk-on:checked) [data-pkstate] [data-pk="on"] { display: inline; }
+[data-pkbox]:has(#pk-on:checked) [data-pkstate] { color: #d4623f; }
+[data-pkbox]:has(#pk-on:checked) [data-pktrack] { border-color: #d4623f; }
+[data-pkbox]:has(#pk-on:checked) [data-pkknob] { transform: translateX(22px); background: #d4623f; }
+[data-pkline="on"] { opacity: 0.34; }
+[data-pkline="off"] { opacity: 1; }
+[data-pkbox]:has(#pk-on:checked) [data-pkline="on"] { opacity: 1; }
+[data-pkbox]:has(#pk-on:checked) [data-pkline="off"] { opacity: 0.34; }
+[data-pkswitch]:hover { border-color: #d4623f; }
+#pk-on:focus-visible + [data-stack="pkhead"] [data-pkswitch] { outline: 2px solid #d4623f; outline-offset: 2px; }
+
+/* 390px 대응 */
+@media (max-width: 767px) {
+  #s-genre, #s-genre-diff, #s-genre-fun { padding-left: 18px !important; padding-right: 18px !important; }
+  #s-genre > div, #s-genre-diff > div, #s-genre-fun > div { padding-left: 0 !important; }
+  [data-stack="fun22"], [data-stack="deck2"], [data-stack="fun01"], [data-stack="tech2"], [data-stack="pk3"], [data-stack="ask5"], [data-stack="task3"], [data-stack="strong6"], [data-stack="diffboard"], [data-stack="tc2"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="ask5"] { gap: 40px !important; }
+  [data-stack="pkhead"] { flex-direction: column !important; align-items: flex-start !important; }
+  [data-stack="frag2"] { gap: 12px !important; }
+  [data-locklane] span[style*="repeat(3"] { row-gap: 8px; }
+  #s-genre-fun h2, #s-genre-diff h2, #s-genre h2 { font-size: 22px !important; }
+}
+[data-stack="ask5"] > div:first-child { padding-top: 0 !important; border-top: none !important; }
+@media (max-width: 760px) {
+  [data-cases] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-cases] > div { grid-column: 1 !important; grid-row: auto !important; }
+}
+
+@media (max-width: 420px) {
+  [data-stack="bubble2"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── 00-4 유저 견인 포인트 ─────────────────────────── */
+[data-pullbody] { overflow: hidden; }
+[data-pullbody] > div { min-width: 0; }
+[data-lbl="close"] { display: none; }
+[data-pullcb]:checked ~ [data-pullbody],
+[data-topic]:target [data-pullbody],
+#pull-all:checked + [data-stack="ask5"] [data-pullbody] { grid-template-rows: 1fr !important; }
+[data-pullcb]:checked ~ [data-stack="pull-head"] [data-lbl="open"],
+[data-topic]:target [data-stack="pull-head"] [data-lbl="open"],
+#pull-all:checked + [data-stack="ask5"] [data-lbl="open"] { display: none; }
+[data-pullcb]:checked ~ [data-stack="pull-head"] [data-lbl="close"],
+[data-topic]:target [data-stack="pull-head"] [data-lbl="close"],
+#pull-all:checked + [data-stack="ask5"] [data-lbl="close"] { display: inline; }
+[data-pullcb]:checked ~ [data-stack="pull-head"] [data-pullchev],
+[data-topic]:target [data-stack="pull-head"] [data-pullchev],
+#pull-all:checked + [data-stack="ask5"] [data-pullchev] { transform: rotate(180deg); }
+[data-pullbtn2]:hover { border-color: #c9a34a; }
+[data-pullcb]:focus-visible ~ [data-stack="pull-head"] [data-pullbtn2],
+#pull-all:focus-visible + [data-stack="ask5"] label[for="pull-all"] { outline: 2px solid #c9a34a; outline-offset: 2px; }
+[data-fig-b-alt], [data-fig-c-alt] { display: none !important; }
+
+@media (max-width: 767px) {
+  [data-fig-b], [data-fig-c] { display: none !important; }
+  [data-fig-b-alt], [data-fig-c-alt] { display: flex !important; }
+}
+@media (max-width: 1100px) {
+  [data-stack="pull-flow"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="pull-flow"] > [data-pullarrow] { transform: rotate(90deg); justify-self: start; }
+}
+@media (max-width: 900px) {
+  [data-stack="pull-rail"], [data-stack="pull-care"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="pull-band"] { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  [data-stack="pull-band"] > a { grid-column: 1 / -1; justify-self: start !important; }
+  [data-stack="pull-tl"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="pull-tl"] > span[aria-hidden="true"] { display: none !important; }
+  [data-stack="pull-tl"] > span > span[style*="border-radius: 50%"] { margin-top: 0 !important; }
+  [data-stack="pull-tl"] > span:last-child { margin-top: 0 !important; }
+  [data-stack="pull-band"] > a { margin-left: 0 !important; }
+}
+@media (max-width: 767px) {
+  #s-genre-pull { padding-left: 18px !important; padding-right: 18px !important; }
+  #s-genre-pull > div { padding-left: 0 !important; }
+  [data-target] { max-width: 260px !important; }
+  [data-stack="pull-head"] [data-pullbtn] { margin-left: 0 !important; order: 5; width: 100%; }
+  [data-stack="pull-head"] { align-items: flex-start !important; }
+}
+@media print {
+  [data-pullbody] { grid-template-rows: 1fr !important; }
+  [data-pullbtn2] { display: none !important; }
+}
+
+/* ── 07-1 바람의나라: 연 ───────────────────────────── */
+
+@media (max-width: 1000px) {
+  [data-stack="yeon4"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 900px) {
+  [data-stack="yeon2"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="yeon2"] > [data-yeonarrow] { transform: rotate(90deg); justify-self: start; }
+  [data-stack="yeon2"] > span[style*="margin-left: auto"] { margin-left: 0 !important; }
+}
+@media (max-width: 767px) {
+  #s6-yeon { padding-left: 18px !important; padding-right: 18px !important; }
+  #s6-yeon > div { padding-left: 0 !important; }
+  [data-stack="yeon2b"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+@media (max-width: 760px) {
+  [data-stack="pull-aim"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* 4차: 00-3 셀링 포인트 · 00-4 읽는 법 띠 */
+@media (max-width: 1150px) {
+  [data-stack="pull-why"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+[data-guidearrow] [data-ga="v"] { display: none; }
+@media (max-width: 1150px) {
+  [data-stack="pull-guide"] { flex-direction: column !important; align-items: flex-start !important; flex-wrap: nowrap !important; }
+  [data-guidearrow] { padding-top: 0 !important; }
+  [data-guidearrow] [data-ga="h"] { display: none; }
+  [data-guidearrow] [data-ga="v"] { display: inline; }
+  [data-stack="pull-guide"] > label { margin-left: 0 !important; margin-top: 4px; }
+}
+@media (max-width: 767px) {
+  [data-stack="pull-head"] > a { order: 5; }
+}
+
+
+@media (max-width: 767px) {
+  [data-stack="hit2"] { grid-template-columns: minmax(0, 1fr) !important; row-gap: 8px !important; }
+  [data-stack="hitlayer"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="diffboard"] > div { grid-column: 1 !important; grid-row: auto !important; }
+}
+
+@media (max-width: 1000px) {
+  [data-stack="hit2"] { grid-template-columns: 150px minmax(0, 1fr) !important; }
+  [data-stack="hit2"] > span:nth-child(3), [data-stack="hit2"] > span:nth-child(6) { grid-column: 2; }
+  [data-stack="strong6"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  [data-stack="strong6"] > div { grid-column: auto !important; grid-row: auto !important; }
+}
+
+@media (max-width: 1000px) {
+  [data-stack="persona"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="fun01"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* 01-2 바람의나라: 연 */
+@media (max-width: 1100px) {
+  [data-stack="yeoncols"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 767px) {
+  [data-stack="yeon4"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  [data-stack="yeon4"] > [data-yeoncap] { grid-column: 1 / -1; text-align: left !important; }
+  [data-stack="yeon2"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+[data-venn-alt] { display: none !important; }
+@media (max-width: 1150px) {
+  [data-venn] { display: none !important; }
+  [data-venn-alt] { display: flex !important; }
+}
+
+@media (max-width: 1150px) {
+  [data-stack="yeonread"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── 좁은 화면: 숫자 띠 · 스킬 표 · 경력 ─────────────────
+   375px 실측에서 숫자 띠(5칸)가 283px 틀에 432~784px, 스킬 행이 520px,
+   경력 행이 328px로 넘쳐 오른쪽이 잘렸다. 두 칸이나 한 칸으로 접는다. */
+@media (max-width: 767px) {
+  [data-stack="strip"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  [data-stack="strip"] > div { border-left: none !important; border-top: 1px solid rgb(34, 30, 23) !important; padding: 16px 10px !important; min-width: 0; }
+  [data-stack="strip"] > div:nth-child(even) { border-left: 1px solid rgb(34, 30, 23) !important; }
+  [data-stack="strip"] > div:nth-child(-n+2) { border-top: none !important; }
+  [data-stack="strip"] > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  [data-stack="strip"] span { white-space: normal !important; word-break: keep-all; }
+  [data-stack="skillhead"], [data-stack="skillrow"] { grid-template-columns: minmax(0, 1fr) auto !important; row-gap: 6px !important; padding: 14px 16px !important; }
+  [data-stack="skillhead"] > :nth-child(3), [data-stack="skillrow"] > :nth-child(3) { grid-column: 1 / -1; }
+  [data-stack="tl"] { grid-template-columns: minmax(0, 1fr) !important; gap: 10px !important; }
+  /* 04 게임 카드: 이미지 260px 칸이 남아 설명 칸이 28px로 눌렸다. 위아래로 쌓는다. */
+  [data-stack="card"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="card"] > div { min-width: 0; }
+  [data-stack="card"] > :last-child > * { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 1100px) {
+  [data-stack="strip"] > div { min-width: 0; }
+  [data-stack="strip"] span { white-space: normal !important; word-break: keep-all; }
+}
+
+/* ── 좁은 화면: 1장 기믹 카드 · 코드 · 플레이 카드 ───
+   375px 실측. 두 칸 그리드는 한 칸으로 접고, 줄바꿈이 안 되는 코드는 옆으로 밀어 본다. */
+@media (max-width: 767px) {
+  [data-stack="gimtop"], [data-stack="gimbot"] { grid-template-columns: minmax(0, 1fr) !important; row-gap: 14px !important; }
+  [data-stack="gimtop"] > *, [data-stack="gimbot"] > *, [data-stack="play"] > * { min-width: 0 !important; }
+  [data-stack="play"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [data-stack="play"] > :first-child { border-right: none !important; border-bottom: 2px solid rgb(42, 37, 28) !important; }
+  div:has(> [data-line]) { overflow-x: auto !important; }
+  [data-line] { width: max-content !important; min-width: 100% !important; }
+  [data-log="grid"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [style*="minmax(320px"], [style*="minmax(300px"], [style*="minmax(280px"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 767px) {
+  [data-stack="g300"], [data-stack="g320"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── 넓은 화면: 나란한 카드의 속줄 맞추기 ───
+   같은 짜임의 카드가 한 줄에 설 때, 안쪽 블록도 같은 높이에서 시작하게 subgrid로 묶는다. */
+@media (min-width: 768px) {
+  [data-stack="g5"] { grid-template-rows: repeat(3, auto) !important; }
+  [data-stack="g5"] > * { display: grid !important; grid-row: span 3 !important; grid-template-rows: subgrid !important; align-content: start; }
+  #s1 [data-stack="g2"] { grid-template-rows: repeat(3, auto) !important; }
+  #s1 [data-stack="g2"] > * { display: grid !important; grid-row: span 3 !important; grid-template-rows: subgrid !important; align-content: start; }
+  #b2-quest [data-stack="intro"], #c-gyeok [data-stack="intro"] { grid-template-rows: repeat(5, auto) !important; }
+  #b2-quest [data-stack="intro"] > *, #c-gyeok [data-stack="intro"] > * { display: grid !important; grid-row: span 5 !important; grid-template-rows: subgrid !important; align-content: start; }
+}
+
+/* ── 좁은 화면: 제목 끝에 한두 글자만 남는 줄을 없앤다 ───
+   한글은 단어 중간에서도 끊기므로 balance로 줄 길이를 고르게 나누고 keep-all로 낱말을 지킨다. */
+@media (max-width: 767px) {
+  h1, h2, h3, h4 { text-wrap: balance; word-break: keep-all; }
+}
+
+/* ── 04 개발한 게임: 좁은 화면에서 지표 칸이 반으로 갈리면 글자가 세로로 눌린다.
+   한 줄에 하나씩 놓아 제목과 숫자가 나란히 서게 한다. */
+@media (max-width: 1100px) {
+  [data-stack="roles"] { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ── 넓은 표: 옆으로 밀 수 있다는 것을 보이게 한다 ───
+   기획서 안의 넓은 표는 글 칸보다 넓어서 가로로 밀어 봐야 한다. 겹침형 스크롤 막대는
+   손을 올려야 나타나서 표가 잘린 줄 모르고 지나치기 쉽다. 자리를 차지하는 막대로 바꿔
+   늘 보이게 하고, 색은 굴 벽 색에 맞춘다. (k 클래스 이름은 빌드마다 바뀌므로 쓰지 않는다) */
+[data-spec-doc] div { scrollbar-width: thin; scrollbar-color: #5a4f3c #14120f; }
+[data-spec-doc] div::-webkit-scrollbar { height: 10px; }
+[data-spec-doc] div::-webkit-scrollbar-track { background: #14120f; }
+[data-spec-doc] div::-webkit-scrollbar-thumb { background: #5a4f3c; border: 2px solid #14120f; }
+[data-spec-doc] div::-webkit-scrollbar-thumb:hover { background: #7a6a4f; }
+
+/* ── 좁은 화면에서는 WebGL 빌드를 권하지 않는다 ───────
+   47MB짜리 Unity 빌드라 휴대폰에서 누르면 데이터만 쓰고 조작도 키보드가 필요하다.
+   본문에 "모바일에서는 하이라이트 영상으로 대신 보여드립니다"라고 적어 두었으니
+   버튼을 숨기고 뒤에서 도는 하이라이트 영상만 남긴다. */
+@media (max-width: 760px) {
+  button[data-embed$="play/index.html"] { display: none !important; }
+}
+
+/* ── 장이 바뀌면 바탕색이 바뀐다 ─────────────────────
+   스크롤만 내리면 어디까지가 한 덩어리인지 알기 어려웠다. 표지 · 01 도깨비굴 ·
+   02 국내성 · 일하는 방식 · 마무리 다섯 덩어리에 각각 다른 바탕색을 준다.
+   섹션마다 인라인 style 로 배경이 박혀 있어 !important 로 덮는다. */
+#s1, #s1-lore, #s1-why, #s1-loop, #s1-play, #s1-log { background: #090a0d !important; }
+#s1-deep, #s1-bt, #s1-balance { background: #06070a !important; }
+#b2, #c-sum, #c-rule, #c-view, #c-ui, #c-judge, #b3-job, #b3-item, #c-level,
+#b2-cave, #c-mon, #b2-quest, #c-item, #c-enh, #c-gyeok, #c-drop, #c-econ,
+#b4-why, #b4-gather, #b4-use, #b3-grow, #c-hg, #c-hg-sum { background: #0d1116 !important; }
+#s3, #s4, #s4-tools { background: #17120c !important; }
+#s6, #s5, #s6-games, #s7 { background: #0e0d0b !important; }
+
+/* ── 성장 로드맵: 좁은 화면에서는 가로선을 접는다 ─────
+   시간 축 위에 점 다섯 개를 찍은 그림이라 휴대폰 폭에서는 글자가 겹친다.
+   두 칸으로 접고 잇는 선은 숨긴다. */
+@media (max-width: 860px) {
+  [data-stack="road"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; row-gap: 22px; }
+  [data-stack="road"] [data-line="road"] > span:first-child { display: none !important; }
+}
